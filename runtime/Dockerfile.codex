@@ -1,6 +1,6 @@
 ARG ARTEX_IMAGE=ghcr.io/jiwoochris/artex-global:latest
 FROM ${ARTEX_IMAGE}
-ARG CODEX_VERSION=0.150.1
+ARG CODEX_VERSION=0.165.0
 RUN npm install -g @openai/codex@${CODEX_VERSION} && codex --version
 WORKDIR /opt/artex/runtime
 COPY runtime/codex_gateway.py ./codex_gateway.py

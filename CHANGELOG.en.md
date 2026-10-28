@@ -20,6 +20,7 @@ The upstream ARTEX project's per-version release history (0.3.x and earlier) and
 
 ### Fixed
 
+- Updated the Codex runtime CLI to `0.165.0` so its model picker also exposes account-available GPT-6 and GPT-6.1 models instead of only the 5.6 family returned by the older client. Existing ChatGPT sign-in and model settings are preserved.
 - Distinguish task report loading failures from empty reports and offer a retry button. Late responses from a previous task cannot replace the current task report.
 
 ## [0.3.15-global.1] · 2026-10-14 · ARTEX-global transition release
