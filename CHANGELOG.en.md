@@ -8,6 +8,10 @@ The upstream ARTEX project's per-version release history (0.3.x and earlier) and
 
 ## [Unreleased]
 
+### Added
+
+- Added a local Codex CLI runtime adapter and Compose launcher using a ChatGPT login session. The adapter forwards ARTEX conversation history, tool calls and results, and prevents automatic inheritance of model API keys from the launching shell.
+
 ### Localization (i18n)
 
 - **Added Spanish documentation.** Translated `README.es.md` from the English README into natural Spanish and added a Spanish link to the language navigation of all five READMEs (English, Korean, Chinese, Spanish, Japanese). Code, commands, payloads, URLs and identifiers are preserved; only descriptive text is translated.
