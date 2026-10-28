@@ -620,7 +620,7 @@ type LLMProfileDTO struct {
 }
 
 func llmProfileDTO(p *db.LLMProfile) LLMProfileDTO {
-	return LLMProfileDTO{
+	result := LLMProfileDTO{
 		ID:               i64s(p.ID),
 		Name:             p.Name,
 		Format:           p.Format,
@@ -642,6 +642,11 @@ func llmProfileDTO(p *db.LLMProfile) LLMProfileDTO {
 		SessionHeaderKey: p.SessionHeaderKey,
 		Retry:            p.Retry,
 	}
+	if isCodexProfile(p) {
+		result.Format = "codex"
+		result.BaseURL, result.Proxy, result.APIKeyHint = "", "", ""
+	}
+	return result
 }
 
 func llmProfileDTOs(in []*db.LLMProfile) []LLMProfileDTO {

@@ -3760,5 +3760,35 @@
       "name": "漏洞复测",
       "description": "从漏洞详情手动启动，读取原证据并保存独立复测结论。"
     }
+  },
+  "codexLogin": {
+    "profileDescription": "在浏览器中连接 ChatGPT 账号并选择模型。保存后将作为默认提供商。",
+    "providerLabel": "提供商",
+    "title": "Codex 登录（设备代码）",
+    "description": "在浏览器中输入设备代码登录，也适用于远程虚拟机，无需 API 密钥。",
+    "checking": "正在检查登录状态…",
+    "login": "使用 Codex 登录",
+    "retry": "刷新登录状态",
+    "codeLabel": "在验证页面输入以下代码",
+    "copy": "复制设备代码",
+    "copied": "已复制设备代码",
+    "copyFailed": "请选择代码并手动复制。",
+    "openPage": "打开验证页面",
+    "waiting": "正在等待浏览器授权…",
+    "cancel": "取消",
+    "cancelled": "已取消登录，可重新获取代码。",
+    "expired": "设备代码已过期，请重新登录获取新代码。",
+    "connected": "已连接",
+    "signOut": "断开连接",
+    "unavailable": "无法连接 Codex 运行时，请检查运行时服务后重试。",
+    "loginFailed": "未能完成登录，请获取新代码后重试。",
+    "actionFailed": "Codex 登录操作失败",
+    "loginRequired": "需要登录",
+    "saveAndUse": "添加并设为默认",
+    "savedActive": "已将 Codex 添加为默认提供商。",
+    "effortHint": "选择 Codex 模型支持的推理强度。",
+    "methodLabel": "ChatGPT 登录",
+    "defaultName": "OpenAI Codex",
+    "modelAfterLogin": "登录后加载模型列表"
   }
 }

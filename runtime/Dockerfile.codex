@@ -1,0 +1,10 @@
+ARG ARTEX_IMAGE=ghcr.io/jiwoochris/artex-global:latest
+FROM ${ARTEX_IMAGE}
+ARG CODEX_VERSION=0.150.1
+RUN npm install -g @openai/codex@${CODEX_VERSION} && codex --version
+WORKDIR /opt/artex/runtime
+COPY runtime/codex_gateway.py ./codex_gateway.py
+ENV PYTHONUNBUFFERED=1 ARTEX_CODEX_MANAGED_AUTH=1
+EXPOSE 8791
+ENTRYPOINT ["python3", "/opt/artex/runtime/codex_gateway.py"]
+CMD ["--host", "0.0.0.0", "--managed-login"]

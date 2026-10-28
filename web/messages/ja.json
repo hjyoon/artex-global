@@ -3760,5 +3760,35 @@
       "name": "脆弱性の再検証",
       "description": "脆弱性の詳細から手動で開始し、元の証拠を読み取って、独立した再検証の結論を保存します。"
     }
+  },
+  "codexLogin": {
+    "profileDescription": "ブラウザーで ChatGPT アカウントを接続し、モデルを選択してください。保存すると既定のプロバイダーになります。",
+    "providerLabel": "プロバイダー",
+    "title": "Codex ログイン（デバイスコード）",
+    "description": "ブラウザーでデバイスコードを入力してログインします。リモート VM でも利用でき、API キーは不要です。",
+    "checking": "ログイン状態を確認中…",
+    "login": "Codex でログイン",
+    "retry": "ログイン状態を更新",
+    "codeLabel": "認証ページに次のコードを入力してください",
+    "copy": "デバイスコードをコピー",
+    "copied": "デバイスコードをコピーしました",
+    "copyFailed": "コードを選択して手動でコピーしてください。",
+    "openPage": "認証ページを開く",
+    "waiting": "ブラウザーでの認証を待っています…",
+    "cancel": "キャンセル",
+    "cancelled": "ログインをキャンセルしました。新しいコードを取得できます。",
+    "expired": "デバイスコードの有効期限が切れました。再度ログインして新しいコードを取得してください。",
+    "connected": "接続済み",
+    "signOut": "接続を解除",
+    "unavailable": "Codex ランタイムに接続できません。サービスを確認して再度お試しください。",
+    "loginFailed": "ログインを完了できませんでした。新しいコードを取得して再度お試しください。",
+    "actionFailed": "Codex のログイン処理に失敗しました",
+    "loginRequired": "ログインが必要",
+    "saveAndUse": "追加して既定に設定",
+    "savedActive": "Codex を既定のプロバイダーとして追加しました。",
+    "effortHint": "Codex モデルが対応する推論の強度を選択します。",
+    "methodLabel": "ChatGPT ログイン",
+    "defaultName": "OpenAI Codex",
+    "modelAfterLogin": "ログイン後にモデル一覧を読み込みます"
   }
 }

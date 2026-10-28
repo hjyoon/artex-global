@@ -1879,6 +1879,28 @@ func (s *Server) pgSaveProfile(w http.ResponseWriter, r *http.Request) {
 	p := body.LLMProfile
 	p.APIKey = body.APIKey
 	p.Streaming = body.Streaming == nil || *body.Streaming
+	if p.Format == "codex" {
+		if err := prepareCodexProfile(r.Context(), &p); err != nil {
+			writeErr(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	} else {
+		if p.BaseURL == codexProfileBaseURL {
+			writeErr(w, http.StatusBadRequest, "Select the Codex login provider")
+			return
+		}
+		if p.ID > 0 && p.APIKey == "" {
+			old, err := pg.ProfileByID(p.ID)
+			if err != nil {
+				writeErr(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+			if isCodexProfile(old) {
+				writeErr(w, http.StatusBadRequest, "Enter an API key when changing away from Codex login")
+				return
+			}
+		}
+	}
 	// 输出上限:负数无意义,归零(= 不发送该字段)。字段名开关只有 Chat Completions
 	// 用得上——anthropic 与 openai-responses 各自定死了字段名,存下来只会误导后续读者,
 	// 故非 openai 格式一律清空。未知取值同样清空,避免把 DB CHECK 的报错甩给用户。
@@ -2056,6 +2078,15 @@ func (s *Server) pgListModels(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := decode(r, &req); err != nil {
 		writeErr(w, 400, err.Error())
+		return
+	}
+	if req.Provider == "codex" {
+		status, err := callCodexRuntime(r.Context(), http.MethodGet, "/v1/codex/status", nil)
+		if err != nil || !status.Connected {
+			writeJSON(w, http.StatusOK, map[string]any{"ok": false, "error": "Sign in with Codex device code first"})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "models": status.Models})
 		return
 	}
 	// Resolve API key: form input > profile stored key.

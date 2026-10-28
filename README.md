@@ -103,6 +103,29 @@ docker compose up -d          # brings up the artex image + postgres together
 
 The image bundles common tools (ripgrep, curl, vim, npm, nmap, and more), and when brought up with compose, `./skills` and `./data` are bind-mounted to the host and survive container recreation.
 
+### Connect Codex with a ChatGPT account (device code login)
+
+To use a ChatGPT-authenticated Codex runtime instead of an API key, prepare `.env` and `POSTGRES_PASSWORD` as above, then run from the repository root. The launcher also requires Python 3.
+
+```bash
+./runtime/start.sh
+```
+
+This builds ARTEX's UI and server from the current source, builds the Codex CLI runtime image, and applies `docker-compose.codex.yml`. The first run downloads images and dependencies. Continue using the original `docker compose up -d` for ordinary API providers.
+
+1. Open <http://localhost:8787/system/llm>, add a model profile, and select **Codex login (device code)**.
+2. Choose **Sign in with Codex**, copy the displayed code, and use **Open verification page** to sign in and approve access. The browser can be on a different machine from the ARTEX server.
+3. Once the account and model list appear, select a model and choose **Add and use as default**. No API key or Base URL is required.
+
+Credentials stay in the dedicated `codex_auth` Docker volume and survive container recreation. This login is separate from the host's Codex CLI account. Use the same Compose configuration for subsequent management:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.codex.yml logs -f codex-runtime
+docker compose -f docker-compose.yml -f docker-compose.codex.yml down
+```
+
+Codex `app-server` performs inference; ARTEX continues to execute its tools. Your account's Codex usage limits apply. The adapter currently delivers each response after it finishes. To disconnect, use **Disconnect** in the same provider settings.
+
 ### Other installation methods
 
 Upstream provides several methods: an install script (`./install.sh`), precompiled binaries (Releases), and a single-binary build from source. The commands and full procedure are collected in the "安装" (Installation) section of [`README.zh.md`](README.zh.md#安装) (in Chinese); the essentials are reproduced below.

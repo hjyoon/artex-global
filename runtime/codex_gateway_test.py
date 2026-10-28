@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import queue
 import time
 import unittest
 from unittest.mock import patch
@@ -117,6 +118,102 @@ class AdapterTests(unittest.TestCase):
         runtime.send = lambda _: None
         with self.assertRaisesRegex(gateway.RuntimeFailure, "logged in with ChatGPT"):
             runtime.initialize()
+
+
+class FakeLoginRuntime:
+    def __init__(self):
+        self.messages = queue.Queue()
+        self.closed = False
+        self.account = {}
+        self.sent = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.close()
+
+    def initialize(self, **_):
+        return self.account
+
+    def rpc(self, method, params):
+        if method == "account/login/start":
+            return {"loginId": "login-test", "userCode": "TEST-CODE", "verificationUrl": "https://auth.openai.com/codex/device"}
+        if method == "account/read":
+            return {"account": self.account}
+        if method == "account/logout":
+            self.account = {}
+        return {}
+
+    def receive(self, deadline):
+        try:
+            result = self.messages.get(timeout=max(0.01, deadline - time.monotonic()))
+        except queue.Empty as exc:
+            raise TimeoutError() from exc
+        if result is None:
+            raise gateway.RuntimeFailure("closed")
+        return result
+
+    def send(self, message):
+        self.sent.append(message)
+
+    def close(self):
+        self.closed = True
+        self.messages.put(None)
+
+
+class DeviceLoginTests(unittest.TestCase):
+    def wait_until(self, predicate):
+        end = time.monotonic() + 2
+        while time.monotonic() < end:
+            if predicate():
+                return
+            time.sleep(0.005)
+        self.fail("login watcher did not settle")
+
+    def test_host_login_cannot_be_modified_by_device_ui(self):
+        factory = unittest.mock.Mock()
+        manager = gateway.DeviceLogin(enabled=False, factory=factory)
+        for action in [manager.start, manager.logout]:
+            with self.assertRaises(gateway.RuntimeFailure):
+                action()
+        factory.assert_not_called()
+
+    def test_pending_login_is_reused_and_stale_cancel_is_rejected(self):
+        runtime = FakeLoginRuntime()
+        factory = unittest.mock.Mock(return_value=runtime)
+        manager = gateway.DeviceLogin(enabled=True, factory=factory)
+        first = manager.start()
+        self.assertEqual(manager.start()["login"], first["login"])
+        factory.assert_called_once()
+        with self.assertRaises(ValueError):
+            manager.cancel("stale-login")
+        self.assertFalse(runtime.closed)
+        cancelled = manager.cancel("login-test")
+        self.assertEqual(cancelled["login"]["state"], "cancelled")
+        self.assertNotIn("user_code", cancelled["login"])
+        self.assertTrue(runtime.closed)
+
+    def test_success_clears_device_code_and_only_exposes_account_metadata(self):
+        runtime = FakeLoginRuntime()
+        manager = gateway.DeviceLogin(enabled=True, factory=lambda: runtime)
+        manager.start()
+        runtime.account = {"type": "chatgpt", "email": "test@example.test", "planType": "plus", "accessToken": "must-not-escape"}
+        runtime.messages.put({"method": "account/login/completed", "params": {"loginId": "login-test", "success": True}})
+        self.wait_until(lambda: manager.status()["connected"])
+        status = manager.status()
+        self.assertIsNone(status["login"])
+        self.assertEqual(status["account"]["email"], "test@example.test")
+        self.assertNotIn("must-not-escape", json.dumps(status))
+
+    def test_failed_login_clears_stale_verification_code(self):
+        runtime = FakeLoginRuntime()
+        manager = gateway.DeviceLogin(enabled=True, factory=lambda: runtime)
+        manager.start()
+        runtime.messages.put({"method": "account/login/completed", "params": {"loginId": "login-test", "success": False, "error": "private failure details"}})
+        self.wait_until(lambda: manager.login["state"] == "failed")
+        self.assertNotIn("user_code", manager.login)
+        self.assertNotIn("private failure details", json.dumps(manager.status()))
 
 
 if __name__ == "__main__":

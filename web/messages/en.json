@@ -3760,5 +3760,35 @@
       "name": "Vulnerability Retest",
       "description": "Launched manually from a finding's detail view; reads the original evidence and saves an independent retest conclusion."
     }
+  },
+  "codexLogin": {
+    "profileDescription": "Connect your ChatGPT account in the browser and select a model. Saving this profile makes it the default provider.",
+    "providerLabel": "Provider",
+    "title": "Codex login (device code)",
+    "description": "Sign in with a browser code, including when running on a remote VM. No API key is required.",
+    "checking": "Checking sign-in…",
+    "login": "Sign in with Codex",
+    "retry": "Refresh sign-in status",
+    "codeLabel": "Enter this code on the verification page",
+    "copy": "Copy device code",
+    "copied": "Device code copied",
+    "copyFailed": "Select the code and copy it manually.",
+    "openPage": "Open verification page",
+    "waiting": "Waiting for browser authorization…",
+    "cancel": "Cancel",
+    "cancelled": "Sign-in cancelled. You can request a new code.",
+    "expired": "The device code expired. Sign in again to get a new code.",
+    "connected": "Connected",
+    "signOut": "Disconnect",
+    "unavailable": "The Codex runtime is unavailable. Check the runtime service and try again.",
+    "loginFailed": "Sign-in could not be completed. Request a new code and try again.",
+    "actionFailed": "Could not update Codex sign-in",
+    "loginRequired": "Sign-in required",
+    "saveAndUse": "Add and use as default",
+    "savedActive": "Codex was added as the default provider.",
+    "effortHint": "Choose a reasoning effort supported by the Codex model.",
+    "methodLabel": "ChatGPT sign-in",
+    "defaultName": "OpenAI Codex",
+    "modelAfterLogin": "Models load after sign-in"
   }
 }

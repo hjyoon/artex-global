@@ -3760,5 +3760,35 @@
       "name": "Reverificación de vulnerabilidad",
       "description": "Se inicia manualmente desde el detalle de un hallazgo; lee la evidencia original y guarda una conclusión de reverificación independiente."
     }
+  },
+  "codexLogin": {
+    "profileDescription": "Conecta tu cuenta de ChatGPT en el navegador y elige un modelo. Al guardar, este perfil será el proveedor predeterminado.",
+    "providerLabel": "Proveedor",
+    "title": "Inicio de sesión de Codex (código de dispositivo)",
+    "description": "Inicia sesión con un código en el navegador, incluso en una VM remota. No necesitas una clave API.",
+    "checking": "Comprobando la sesión…",
+    "login": "Iniciar sesión con Codex",
+    "retry": "Actualizar estado de sesión",
+    "codeLabel": "Introduce este código en la página de verificación",
+    "copy": "Copiar código de dispositivo",
+    "copied": "Código de dispositivo copiado",
+    "copyFailed": "Selecciona el código y cópialo manualmente.",
+    "openPage": "Abrir página de verificación",
+    "waiting": "Esperando la autorización en el navegador…",
+    "cancel": "Cancelar",
+    "cancelled": "Inicio de sesión cancelado. Puedes solicitar un código nuevo.",
+    "expired": "El código ha caducado. Inicia sesión de nuevo para obtener otro.",
+    "connected": "Conectado",
+    "signOut": "Desconectar",
+    "unavailable": "El entorno de ejecución de Codex no está disponible. Comprueba el servicio e inténtalo de nuevo.",
+    "loginFailed": "No se pudo completar el inicio de sesión. Solicita otro código e inténtalo de nuevo.",
+    "actionFailed": "No se pudo actualizar la sesión de Codex",
+    "loginRequired": "Inicio de sesión necesario",
+    "saveAndUse": "Añadir y usar por defecto",
+    "savedActive": "Codex se ha añadido como proveedor predeterminado.",
+    "effortHint": "Elige un nivel de razonamiento compatible con el modelo de Codex.",
+    "methodLabel": "Sesión de ChatGPT",
+    "defaultName": "OpenAI Codex",
+    "modelAfterLogin": "Los modelos se cargan al iniciar sesión"
   }
 }

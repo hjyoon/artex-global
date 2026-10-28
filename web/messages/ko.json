@@ -3760,5 +3760,35 @@
       "name": "취약점 재검증",
       "description": "취약점 상세에서 수동으로 시작해, 원래 증거를 읽고 독립적인 재검증 결론을 저장합니다."
     }
+  },
+  "codexLogin": {
+    "profileDescription": "브라우저에서 ChatGPT 계정을 연결하고 모델을 선택하세요. 저장하면 기본 제공자로 사용됩니다.",
+    "providerLabel": "제공자",
+    "title": "Codex 로그인(기기 코드)",
+    "description": "브라우저에서 기기 코드로 로그인합니다. 원격 VM에서도 사용할 수 있으며 API 키가 필요하지 않습니다.",
+    "checking": "로그인 상태 확인 중…",
+    "login": "Codex로 로그인",
+    "retry": "로그인 상태 새로고침",
+    "codeLabel": "인증 페이지에 아래 코드를 입력하세요",
+    "copy": "기기 코드 복사",
+    "copied": "기기 코드를 복사했습니다",
+    "copyFailed": "코드를 선택해 직접 복사하세요.",
+    "openPage": "인증 페이지 열기",
+    "waiting": "브라우저 인증을 기다리는 중…",
+    "cancel": "취소",
+    "cancelled": "로그인을 취소했습니다. 새 코드를 요청할 수 있습니다.",
+    "expired": "기기 코드가 만료되었습니다. 다시 로그인해 새 코드를 받으세요.",
+    "connected": "연결됨",
+    "signOut": "연결 해제",
+    "unavailable": "Codex 런타임에 연결할 수 없습니다. 런타임 서비스를 확인한 뒤 다시 시도하세요.",
+    "loginFailed": "로그인을 완료하지 못했습니다. 새 코드를 받아 다시 시도하세요.",
+    "actionFailed": "Codex 로그인 처리에 실패했습니다",
+    "loginRequired": "로그인 필요",
+    "saveAndUse": "추가하고 기본으로 사용",
+    "savedActive": "Codex를 기본 제공자로 추가했습니다.",
+    "effortHint": "Codex 모델이 지원하는 사고 강도를 선택합니다.",
+    "methodLabel": "ChatGPT 로그인",
+    "defaultName": "OpenAI Codex",
+    "modelAfterLogin": "로그인 후 모델 목록을 불러옵니다"
   }
 }

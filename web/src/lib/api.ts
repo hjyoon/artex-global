@@ -20,6 +20,7 @@ import type {
   BatchCategoryItem,
   BatchControlItem,
   ChatAttachment,
+  CodexLoginStatus,
   CommandRecord,
   Company,
   CompanyScopeMutation,
@@ -973,6 +974,10 @@ export const api = {
       session_header_key,
     }),
   llmProfiles: () => get<{ profiles: LLMProfile[] }>("/llm/profiles").then((r) => arr(r.profiles)),
+  codexStatus: () => get<CodexLoginStatus>("/llm/codex/status"),
+  codexLogin: () => post<CodexLoginStatus>("/llm/codex/login", {}),
+  codexCancel: (login_id: string) => post<CodexLoginStatus>("/llm/codex/cancel", { login_id }),
+  codexLogout: () => post<CodexLoginStatus>("/llm/codex/logout", {}),
   saveLLMProfile: (p: {
     id?: number; // omit/0 = create; set = update that profile
     name: string;

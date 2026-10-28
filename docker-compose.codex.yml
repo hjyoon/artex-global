@@ -1,0 +1,40 @@
+# runtime/start.sh에서 선택하는 Codex 전용 Compose 구성입니다.
+# Codex 기기 코드 로그인 UI와 전용 런타임을 함께 실행합니다.
+# runtime/start.sh가 비공개 연결 토큰을 준비하고 두 이미지를 빌드합니다.
+services:
+  artex:
+    image: artex-global:codex-device-local
+    build:
+      context: .
+      dockerfile: runtime/Dockerfile.app
+      args:
+        ARTEX_IMAGE: ghcr.io/jiwoochris/artex-global:${ARTEX_TAG:-latest}
+    depends_on:
+      codex-runtime:
+        condition: service_healthy
+    environment:
+      ANTHROPIC_API_KEY: ""
+      OPENAI_API_KEY: ""
+      ARTEX_CODEX_RUNTIME_URL: http://codex-runtime:8791
+      ARTEX_CODEX_GATEWAY_TOKEN: ${ARTEX_CODEX_GATEWAY_TOKEN:?runtime/start.sh를 먼저 실행하세요}
+
+  codex-runtime:
+    image: artex-codex-runtime:local
+    build:
+      context: .
+      dockerfile: runtime/Dockerfile.codex
+      args:
+        ARTEX_IMAGE: ghcr.io/jiwoochris/artex-global:${ARTEX_TAG:-latest}
+    environment:
+      ARTEX_CODEX_GATEWAY_TOKEN: ${ARTEX_CODEX_GATEWAY_TOKEN:?runtime/start.sh를 먼저 실행하세요}
+    volumes:
+      - codex_auth:/root/.codex
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8791/healthz', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+volumes:
+  codex_auth:

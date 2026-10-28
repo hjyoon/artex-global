@@ -28,9 +28,10 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
-import type { LLMPoolMember, LLMPoolStatus, LLMProfile, LLMRetryOverride } from "@/lib/types";
+import type { CodexLoginStatus, LLMPoolMember, LLMPoolStatus, LLMProfile, LLMRetryOverride } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+import { CodexLogin } from "./_components/codex-login";
 import { ProfileRetryFields, RetryPolicyPanel, ZERO_OVERRIDE } from "./_components/retry";
 
 // 思考开关(thinking.type)与思考强度(reasoning_effort)是两个【互相独立】的字段，
@@ -258,9 +259,10 @@ function ProfileSheet({
   onSaved: (id: string) => void;
 }) {
   const t = useTranslations("llmPage");
+  const tc = useTranslations("codexLogin");
   const isNew = !profile;
   const [name, setName] = React.useState("");
-  const [format, setFormat] = React.useState<"anthropic" | "openai" | "openai-responses">("anthropic");
+  const [format, setFormat] = React.useState<LLMProfile["format"]>("anthropic");
   const [model, setModel] = React.useState("");
   const [baseUrl, setBaseUrl] = React.useState("");
   const [proxy, setProxy] = React.useState("");
@@ -283,6 +285,18 @@ function ProfileSheet({
   const [models, setModels] = React.useState<string[]>([]);
   const [loadingModels, setLoadingModels] = React.useState(false);
   const [modelsOpen, setModelsOpen] = React.useState(false);
+  const [codexStatus, setCodexStatus] = React.useState<CodexLoginStatus | null>(null);
+  const onCodexStatus = React.useCallback((value: CodexLoginStatus) => {
+    setCodexStatus(value);
+    if (value.connected) {
+      setModels(value.models ?? []);
+      setModel((current) => {
+        if (current) return current;
+        if (value.default_model) return value.default_model;
+        return value.models?.[0] ?? "";
+      });
+    }
+  }, []);
 
   // 思考开关 / 上限字段名 / 思考强度三组选项的标签走 i18n，故在组件内按当前语言构造。
   const THINKING_TYPES: { value: string; label: string }[] = [
@@ -308,7 +322,8 @@ function ProfileSheet({
   React.useEffect(() => {
     if (!open) return;
     setName(profile?.name ?? "");
-    setFormat(profile?.format === "openai" || profile?.format === "openai-responses" ? profile.format : "anthropic");
+    setFormat(profile?.format ?? "anthropic");
+    setCodexStatus(null);
     setModel(profile?.model ?? "");
     setBaseUrl(profile?.base_url ?? "");
     setProxy(profile?.proxy ?? "");
@@ -331,6 +346,7 @@ function ProfileSheet({
   }, [open, profile]);
 
   const profileId = profile ? Number(profile.id) : undefined;
+  const newProfileDescription = format === "codex" ? tc("profileDescription") : t("profile.descNew");
 
   async function loadModels() {
     if (loadingModels) return;
@@ -361,10 +377,10 @@ function ProfileSheet({
       const r = await api.testLLM(
         format,
         model,
-        baseUrl,
-        apiKey,
-        proxy,
-        toStore(thinkingType),
+        format === "codex" ? "" : baseUrl,
+        format === "codex" ? "" : apiKey,
+        format === "codex" ? "" : proxy,
+        format === "codex" ? "" : toStore(thinkingType),
         toStore(effort),
         profileId,
         streaming,
@@ -396,9 +412,9 @@ function ProfileSheet({
         name: name.trim(),
         format,
         model: model.trim(),
-        base_url: baseUrl.trim(),
-        proxy: proxy.trim(),
-        api_key: apiKey,
+        base_url: format === "codex" ? undefined : baseUrl.trim(),
+        proxy: format === "codex" ? undefined : proxy.trim(),
+        api_key: format === "codex" ? undefined : apiKey,
         rate_per_second: Number(rps) || 0,
         rate_per_minute: Number(rpm) || 0,
         context_window_k: Number(cw) || 0,
@@ -414,7 +430,10 @@ function ProfileSheet({
         session_header_key: sessionHeaderKey.trim(),
         retry,
       });
-      if (isNew) toast.success(t("profile.toast.created", { name: name.trim() }));
+      if (isNew && format === "codex") {
+        await api.activateLLMProfile(String(id));
+        toast.success(tc("savedActive"));
+      } else if (isNew) toast.success(t("profile.toast.created", { name: name.trim() }));
       else toast.success(profile?.is_default ? t("profile.toast.savedActive") : t("profile.toast.saved"));
       onSaved(String(id));
       onOpenChange(false);
@@ -440,7 +459,7 @@ function ProfileSheet({
               </Badge>
             )}
           </SheetTitle>
-          <SheetDescription>{isNew ? t("profile.descNew") : t("profile.descEdit")}</SheetDescription>
+          <SheetDescription>{isNew ? newProfileDescription : t("profile.descEdit")}</SheetDescription>
         </SheetHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
@@ -455,8 +474,18 @@ function ProfileSheet({
               />
             </div>
             <div className="grid gap-2">
-              <Label>{t("profile.format.label")}</Label>
-              <Select value={format} onValueChange={(v) => setFormat(v as "anthropic" | "openai" | "openai-responses")}>
+              <Label>{tc("providerLabel")}</Label>
+              <Select
+                value={format}
+                onValueChange={(v) => {
+                  setFormat(v as LLMProfile["format"]);
+                  if (v === "codex") {
+                    setCodexStatus(null);
+                    setModel("");
+                    setName((current) => current || tc("defaultName"));
+                  }
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder={t("profile.format.placeholder")} />
                 </SelectTrigger>
@@ -464,10 +493,13 @@ function ProfileSheet({
                   <SelectItem value="anthropic">Anthropic</SelectItem>
                   <SelectItem value="openai">OpenAI (Chat Completions)</SelectItem>
                   <SelectItem value="openai-responses">OpenAI (Responses API)</SelectItem>
+                  <SelectItem value="codex">{tc("title")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
+
+          {format === "codex" && <CodexLogin onStatusChange={onCodexStatus} />}
 
           <div className="grid gap-2">
             <Label htmlFor="p-model">{t("profile.model.label")}</Label>
@@ -475,8 +507,9 @@ function ProfileSheet({
               <Input
                 id="p-model"
                 className="font-mono"
-                placeholder="claude-opus-4-8"
+                placeholder={format === "codex" ? tc("modelAfterLogin") : "claude-opus-4-8"}
                 value={model}
+                disabled={format === "codex" && !codexStatus?.connected}
                 onChange={(e) => setModel(e.target.value)}
               />
               {/* modal: 这个 Popover 的内容被 portal 到 <body>，在 Sheet 的滚动锁之外，
@@ -488,7 +521,7 @@ function ProfileSheet({
                     variant="outline"
                     size="icon"
                     className="shrink-0"
-                    disabled={loadingModels}
+                    disabled={loadingModels || (format === "codex" && !codexStatus?.connected)}
                     onClick={loadModels}
                     title={t("profile.model.loadTitle")}
                   >
@@ -516,53 +549,57 @@ function ProfileSheet({
             </div>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="p-base-url">{t("profile.baseUrl.label")}</Label>
-            <Input
-              id="p-base-url"
-              className="font-mono"
-              placeholder="https://api.openai.com/v1"
-              value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
-            />
-          </div>
+          {format !== "codex" && (
+            <>
+              <div className="grid gap-2">
+                <Label htmlFor="p-base-url">{t("profile.baseUrl.label")}</Label>
+                <Input
+                  id="p-base-url"
+                  className="font-mono"
+                  placeholder="https://api.openai.com/v1"
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                />
+              </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="p-proxy">{t("profile.proxy.label")}</Label>
-            <Input
-              id="p-proxy"
-              className="font-mono"
-              placeholder="socks5://user:pass@127.0.0.1:1080 · http://127.0.0.1:8080"
-              value={proxy}
-              onChange={(e) => setProxy(e.target.value)}
-            />
-            <p className="text-muted-foreground text-xs">{t("profile.proxy.hint")}</p>
-          </div>
+              <div className="grid gap-2">
+                <Label htmlFor="p-proxy">{t("profile.proxy.label")}</Label>
+                <Input
+                  id="p-proxy"
+                  className="font-mono"
+                  placeholder="socks5://user:pass@127.0.0.1:1080 · http://127.0.0.1:8080"
+                  value={proxy}
+                  onChange={(e) => setProxy(e.target.value)}
+                />
+                <p className="text-muted-foreground text-xs">{t("profile.proxy.hint")}</p>
+              </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="p-session-header">{t("profile.sessionHeader.label")}</Label>
-            <Input
-              id="p-session-header"
-              className="font-mono"
-              placeholder={t("profile.sessionHeader.placeholder")}
-              value={sessionHeaderKey}
-              onChange={(e) => setSessionHeaderKey(e.target.value)}
-            />
-            <p className="text-muted-foreground text-xs">
-              {t.rich("profile.sessionHeader.hint", { b: (c) => <b>{c}</b> })}
-            </p>
-          </div>
+              <div className="grid gap-2">
+                <Label htmlFor="p-session-header">{t("profile.sessionHeader.label")}</Label>
+                <Input
+                  id="p-session-header"
+                  className="font-mono"
+                  placeholder={t("profile.sessionHeader.placeholder")}
+                  value={sessionHeaderKey}
+                  onChange={(e) => setSessionHeaderKey(e.target.value)}
+                />
+                <p className="text-muted-foreground text-xs">
+                  {t.rich("profile.sessionHeader.hint", { b: (c) => <b>{c}</b> })}
+                </p>
+              </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="p-api-key">API Key</Label>
-            <Input
-              id="p-api-key"
-              type="password"
-              placeholder={keyHint ? t("profile.apiKey.placeholderSet", { hint: keyHint }) : "sk-…"}
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
-          </div>
+              <div className="grid gap-2">
+                <Label htmlFor="p-api-key">API Key</Label>
+                <Input
+                  id="p-api-key"
+                  type="password"
+                  placeholder={keyHint ? t("profile.apiKey.placeholderSet", { hint: keyHint }) : "sk-…"}
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                />
+              </div>
+            </>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="grid gap-2">
@@ -611,80 +648,88 @@ function ProfileSheet({
               </div>
               <Switch checked={poolExclude} onCheckedChange={setPoolExclude} aria-label={t("profile.exclude.aria")} />
             </div>
-            <div className="flex items-center justify-between gap-4 border-t pt-3">
-              <div className="grid gap-0.5">
-                <Label className="text-sm">{t("profile.streaming.label")}</Label>
-                <p className="text-muted-foreground text-xs">{t("profile.streaming.hint")}</p>
+            {format !== "codex" && (
+              <div className="flex items-center justify-between gap-4 border-t pt-3">
+                <div className="grid gap-0.5">
+                  <Label className="text-sm">{t("profile.streaming.label")}</Label>
+                  <p className="text-muted-foreground text-xs">{t("profile.streaming.hint")}</p>
+                </div>
+                <Switch checked={streaming} onCheckedChange={setStreaming} aria-label={t("profile.streaming.aria")} />
               </div>
-              <Switch checked={streaming} onCheckedChange={setStreaming} aria-label={t("profile.streaming.aria")} />
-            </div>
+            )}
           </div>
 
-          <div className="grid gap-3 rounded-lg border p-3">
-            <div className="flex items-center justify-between gap-4">
-              <div className="grid gap-0.5">
-                <Label htmlFor="p-max-tokens" className="text-sm">
-                  {t("profile.maxTokens.label")}
-                </Label>
-                <p className="text-muted-foreground text-xs">{t("profile.maxTokens.hint")}</p>
+          {format !== "codex" && (
+            <div className="grid gap-3 rounded-lg border p-3">
+              <div className="flex items-center justify-between gap-4">
+                <div className="grid gap-0.5">
+                  <Label htmlFor="p-max-tokens" className="text-sm">
+                    {t("profile.maxTokens.label")}
+                  </Label>
+                  <p className="text-muted-foreground text-xs">{t("profile.maxTokens.hint")}</p>
+                </div>
+                <Input
+                  id="p-max-tokens"
+                  type="number"
+                  min={0}
+                  className="w-28 shrink-0"
+                  value={maxTokens}
+                  onChange={(e) => setMaxTokens(e.target.value)}
+                  placeholder="0"
+                />
               </div>
-              <Input
-                id="p-max-tokens"
-                type="number"
-                min={0}
-                className="w-28 shrink-0"
-                value={maxTokens}
-                onChange={(e) => setMaxTokens(e.target.value)}
-                placeholder="0"
-              />
-            </div>
-            <div className="flex items-center justify-between gap-4 border-t pt-3">
-              <div className="grid gap-0.5">
-                <Label className="text-sm">{t("profile.maxTokensField.label")}</Label>
-                <p className="text-muted-foreground text-xs">{t(`profile.maxTokensFieldHint.${format}`)}</p>
+              <div className="flex items-center justify-between gap-4 border-t pt-3">
+                <div className="grid gap-0.5">
+                  <Label className="text-sm">{t("profile.maxTokensField.label")}</Label>
+                  <p className="text-muted-foreground text-xs">{t(`profile.maxTokensFieldHint.${format}`)}</p>
+                </div>
+                <Select
+                  value={format === "openai" ? maxTokensField : NONE}
+                  onValueChange={setMaxTokensField}
+                  disabled={format !== "openai"}
+                >
+                  <SelectTrigger className="w-56 shrink-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MAX_TOKENS_FIELDS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Select
-                value={format === "openai" ? maxTokensField : NONE}
-                onValueChange={setMaxTokensField}
-                disabled={format !== "openai"}
-              >
-                <SelectTrigger className="w-56 shrink-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MAX_TOKENS_FIELDS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
-          </div>
+          )}
 
           <div className="grid gap-3 rounded-lg border p-3">
-            <div className="flex items-center justify-between gap-4">
-              <div className="grid gap-0.5">
-                <Label className="text-sm">{t("profile.thinkingType.label")}</Label>
-                <p className="text-muted-foreground text-xs">{t("profile.thinkingType.hint")}</p>
+            {format !== "codex" && (
+              <div className="flex items-center justify-between gap-4">
+                <div className="grid gap-0.5">
+                  <Label className="text-sm">{t("profile.thinkingType.label")}</Label>
+                  <p className="text-muted-foreground text-xs">{t("profile.thinkingType.hint")}</p>
+                </div>
+                <Select value={thinkingType} onValueChange={setThinkingType}>
+                  <SelectTrigger className="w-32 shrink-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {THINKING_TYPES.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={thinkingType} onValueChange={setThinkingType}>
-                <SelectTrigger className="w-32 shrink-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {THINKING_TYPES.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center justify-between gap-4 border-t pt-3">
+            )}
+            <div className={cn("flex items-center justify-between gap-4", format !== "codex" && "border-t pt-3")}>
               <div className="grid gap-0.5">
                 <Label className="text-sm">{t("profile.effort.label")}</Label>
-                <p className="text-muted-foreground text-xs">{t("profile.effort.hint")}</p>
+                <p className="text-muted-foreground text-xs">
+                  {format === "codex" ? tc("effortHint") : t("profile.effort.hint")}
+                </p>
               </div>
               <Select value={effort} onValueChange={setEffort}>
                 <SelectTrigger className="w-32 shrink-0">
@@ -705,14 +750,24 @@ function ProfileSheet({
         </div>
 
         <div className="flex gap-2 border-t px-4 py-3">
-          <Button variant="outline" onClick={testConnection} disabled={testing}>
+          <Button
+            variant="outline"
+            onClick={testConnection}
+            disabled={testing || (format === "codex" && !codexStatus?.connected)}
+          >
             {testing ? <Loader2Icon className="animate-spin" /> : <PlugZapIcon />}
             {testing ? t("profile.testing") : t("profile.testConnection")}
           </Button>
-          <Button onClick={save} disabled={saving} className="flex-1">
+          <Button
+            onClick={save}
+            disabled={saving || (format === "codex" && !codexStatus?.connected)}
+            className="flex-1"
+          >
             {saving && <Loader2Icon className="animate-spin" />}
             {!saving && (isNew ? <PlusIcon /> : <SaveIcon />)}
-            {isNew ? t("profile.create") : t("profile.save")}
+            {isNew && format === "codex" && tc("saveAndUse")}
+            {isNew && format !== "codex" && t("profile.create")}
+            {!isNew && t("profile.save")}
           </Button>
         </div>
       </SheetContent>
@@ -724,7 +779,27 @@ function ProfileSheet({
 
 export default function LLMPage() {
   const t = useTranslations("llmPage");
+  const tc = useTranslations("codexLogin");
   const [profiles, setProfiles] = React.useState<LLMProfile[]>([]);
+  const [codexConnected, setCodexConnected] = React.useState<boolean | null>(null);
+  React.useEffect(() => {
+    if (!profiles.some((p) => p.format === "codex")) return;
+    let active = true;
+    const refresh = async () => {
+      try {
+        const value = await api.codexStatus();
+        if (active) setCodexConnected(value.connected);
+      } catch {
+        if (active) setCodexConnected(false);
+      }
+    };
+    void refresh();
+    const timer = setInterval(() => void refresh(), 15000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [profiles]);
   const [pool, setPool] = React.useState<LLMPoolStatus | null>(null);
   const [poolOpen, setPoolOpen] = React.useState(false);
   // 抽屉的开关和内容分开存：关闭时 editing 保持不变，否则关闭动画期间标题会从
@@ -739,7 +814,13 @@ export default function LLMPage() {
   // 一个配置在卡片上显示的「是否正常」。没填 Key 的配置根本发不出请求，比熔断更该先说。
   const healthOf = React.useCallback(
     (p: LLMProfile, m?: LLMPoolMember): Health => {
-      if (!p.api_key_hint) {
+      if (p.format === "codex" && codexConnected !== true) {
+        return {
+          label: codexConnected === null ? tc("checking") : tc("loginRequired"),
+          cls: "border-amber-500/50 text-amber-600 dark:text-amber-400",
+        };
+      }
+      if (p.format !== "codex" && !p.api_key_hint) {
         return {
           label: t("health.noKey.label"),
           cls: "border-muted-foreground/40 text-muted-foreground",
@@ -765,7 +846,7 @@ export default function LLMPage() {
       }
       return { label: t("health.ok"), cls: "border-emerald-500/50 text-emerald-600 dark:text-emerald-400" };
     },
-    [t],
+    [t, tc, codexConnected],
   );
 
   const loadPool = React.useCallback(async () => {
@@ -895,7 +976,11 @@ export default function LLMPage() {
                     </div>
 
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 pl-6 text-muted-foreground text-xs">
-                      {p.api_key_hint && <span>{p.api_key_hint}</span>}
+                      {p.format === "codex" ? (
+                        <span>{tc("methodLabel")}</span>
+                      ) : (
+                        p.api_key_hint && <span>{p.api_key_hint}</span>
+                      )}
                       <span>
                         {p.rate_per_second}/s · {p.rate_per_minute}/min
                       </span>

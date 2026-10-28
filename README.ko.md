@@ -110,6 +110,29 @@ docker compose up -d          # artex 이미지 + postgres 를 함께 기동
 
 이미지에는 자주 쓰는 도구(ripgrep·curl·vim·npm·nmap 등)가 들어 있고, compose 로 기동하면 `./skills` 와 `./data` 는 바인드 마운트로 호스트에 남아 컨테이너를 다시 만들어도 보존됩니다.
 
+### ChatGPT 계정으로 Codex 연결하기 (기기 코드 로그인)
+
+API 키 대신 ChatGPT 계정으로 로그인한 Codex 런타임을 사용할 수 있습니다. 시작 스크립트에는 Python 3 도 필요합니다. 위 단계에서 `.env` 와 `POSTGRES_PASSWORD` 를 준비한 뒤 저장소 루트에서 실행합니다.
+
+```bash
+./runtime/start.sh
+```
+
+이 명령은 현재 소스의 ARTEX UI·서버와 Codex CLI 런타임 이미지를 빌드하고, `docker-compose.codex.yml` 구성을 함께 적용합니다. 최초 실행에는 이미지와 의존성 다운로드 시간이 필요합니다. 일반 API 제공자만 사용할 때는 기존 `docker compose up -d` 를 사용하면 됩니다.
+
+1. <http://localhost:8787/system/llm> 에서 모델 설정을 추가하고 제공자로 **Codex 로그인(기기 코드)**를 선택합니다.
+2. **Codex로 로그인**을 누른 뒤 표시된 코드를 복사하고 **인증 페이지 열기**에서 로그인·승인합니다. 원격 서버에 ARTEX 를 띄워도 브라우저가 있는 기기에서 인증할 수 있습니다.
+3. 연결된 계정과 모델 목록이 나타나면 모델을 선택하고 **추가하고 기본으로 사용**을 누릅니다. API 키·Base URL 입력은 필요 없습니다.
+
+계정 인증 정보는 전용 `codex_auth` Docker 볼륨에 보관하며 컨테이너를 다시 만들어도 유지됩니다. 호스트의 Codex CLI 로그인과는 별도입니다. 이후 실행·로그 확인·종료에도 같은 구성을 지정합니다.
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.codex.yml logs -f codex-runtime
+docker compose -f docker-compose.yml -f docker-compose.codex.yml down
+```
+
+추론은 Codex `app-server` 가 수행하고, 도구 실행은 기존 ARTEX 가 담당합니다. ChatGPT 계정의 Codex 사용 한도가 적용되며, 현재 어댑터는 각 응답이 완성된 뒤 ARTEX 에 전달합니다. 인증을 해제하려면 같은 제공자 설정에서 **연결 해제**를 누릅니다.
+
 ### 그 밖의 설치 방법
 
 원본 저장소는 설치 스크립트(`./install.sh`), 사전 컴파일 바이너리(Releases), 소스 단일 바이너리 컴파일 등 여러 방법을 제공합니다. 명령과 절차는 [`README.zh.md`](README.zh.md#安装)의 "安装"(설치) 절에 정리되어 있으며, 아래 핵심만 옮깁니다.

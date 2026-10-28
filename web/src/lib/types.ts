@@ -1029,7 +1029,7 @@ export interface NotificationDelivery {
 export interface LLMProfile {
   id: string;
   name: string;
-  format: "openai" | "anthropic" | "openai-responses";
+  format: "openai" | "anthropic" | "openai-responses" | "codex";
   base_url?: string;
   proxy?: string;
   model: string;
@@ -1059,6 +1059,20 @@ export interface LLMProfile {
   session_header_key?: string;
   // 本配置对重试的覆盖（建连/空响应/同 provider 安全窗口）。留空/全 0 = 跟随全局策略。
   retry?: LLMRetryOverride;
+}
+
+export interface CodexLoginStatus {
+  available: boolean;
+  connected: boolean;
+  account?: { email?: string | null; plan_type?: string | null };
+  login?: {
+    login_id: string;
+    state: "pending" | "cancelled" | "expired" | "failed";
+    user_code?: string;
+    verification_url?: string;
+  };
+  models?: string[];
+  default_model?: string;
 }
 
 // ---- LLM 重试策略 ----

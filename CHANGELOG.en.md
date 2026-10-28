@@ -10,6 +10,7 @@ The upstream ARTEX project's per-version release history (0.3.x and earlier) and
 
 ### Added
 
+- Added **Codex login (device code)** to LLM provider settings, including code issuance, browser authorization, cancellation, retry and disconnect. Credentials live in the dedicated Codex container's volume. Select the Codex Compose configuration with `runtime/start.sh`.
 - Added a local Codex CLI runtime adapter and Compose launcher using a ChatGPT login session. The adapter forwards ARTEX conversation history, tool calls and results, and prevents automatic inheritance of model API keys from the launching shell.
 
 ### Localization (i18n)

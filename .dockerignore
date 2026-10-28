@@ -1,5 +1,11 @@
 .git
+.env
+**/*.env
+.secrets
+config.json
+jwt.key
 **/node_modules
+**/__pycache__
 web/.next
 web/out
 server/webui/dist
